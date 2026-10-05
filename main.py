@@ -1,33 +1,45 @@
 import torch
+import pandas as pd
 
-# 1. Training examples: each row contains one input or answer.
-x = torch.tensor([[0.0], [1.0], [2.0], [3.0], [4.0]])
-y = torch.tensor([[2.0], [5.0], [8.0], [11.0], [14.0]])
+from alpaca.data.historical.stock import StockHistoricalDataClient
+from alpaca.data.requests import StockBarsRequest, StockTradesRequest, StockQuotesRequest
+from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
-# 2. Model: prediction = weight * input + bias.
-# The weight and bias start with random values.
-model = torch.nn.Linear(1, 1)
 
-# 3. Measure prediction error and choose how to update the model.
-loss_function = torch.nn.MSELoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+from datetime import datetime
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
+from sklearn.preprocessing import StandardScaler
 
-# 4. Learn by repeatedly predicting, measuring, and adjusting.
-for epoch in range(1000):
-    prediction = model(x)
-    loss = loss_function(prediction, y)
+#yoinked above code from documentation
 
-    optimizer.zero_grad()  # Clear gradients from the previous step.
-    loss.backward()       # Calculate gradients for weight and bias.
-    optimizer.step()      # Adjust weight and bias to reduce error.
+#test data frame
+df = pd.DataFrame(
+    {
+        "Name": [
+            "bob", "joe",  "maclom"
+        ],
+        "Age": [22, 55,  33],
+        "Sex": ["male", "female", "female"]
+    }
+)
 
-    if epoch % 200 == 0:
-        print(f"Step {epoch}: loss = {loss.item():.6f}")
+print(df);
+#api key get from alpaca info
+API_KEY = "PKK7ERX7IQAUFQQ456AEYYHMU5"
+SECRET_KEY = "GgfPsuTUEmwmq1r8fQVR5FAZkAeNBAkaYe5WouMoF8SV"
+#, paper = True, remeber to do paper
+stock_historical_data_client = StockHistoricalDataClient(API_KEY, SECRET_KEY)
 
-# 5. Inspect what it learned and try an input absent from training.
-print("Learned weight:", model.weight.item())
-print("Learned bias:", model.bias.item())
+request_params = StockBarsRequest(
+    symbol_or_symbols=["AAPL", "MSFT"],
+    timeframe=TimeFrame.Day,                 # Options: Day, Hour, Minute, etc.
+    start=datetime(2026, 1, 1),              # Start date
+    end=datetime(2026, 6, 1)                 # End date
+)
 
-with torch.no_grad():
-    result = model(torch.tensor([[5.0]]))
-    print("Prediction for x = 5:", result.item())
+bars = stock_historical_data_client.get_stock_bars(request_params)
+
+df = bars.df
+print(df.head(-3))
+
